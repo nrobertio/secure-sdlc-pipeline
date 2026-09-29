@@ -1,0 +1,95 @@
+# DevSecOps pipeline: shift-left security scanning integrated into CI.
+stages:
+  - build
+  - secrets
+  - sast
+  - sca
+  - container
+  - sbom
+  - dast
+
+variables:
+  IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+build:
+  stage: build
+  image: python:3.12-slim
+  script:
+    - pip install -r app/requirements.txt
+    - python -m compileall app
+  artifacts:
+    paths: [app/]
+
+secrets-gitleaks:
+  stage: secrets
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  script:
+    - gitleaks detect --source . --report-format sarif --report-path gitleaks.sarif --redact
+  artifacts:
+    when: always
+    paths: [gitleaks.sarif]
+
+sast-semgrep:
+  stage: sast
+  image: returntocorp/semgrep:latest
+  script:
+    - semgrep --config auto --sarif --output semgrep.sarif app/
+  artifacts:
+    when: always
+    paths: [semgrep.sarif]
+
+# SonarQube SAST (requires SONAR_HOST_URL and SONAR_TOKEN CI variables).
+sast-sonarqube:
+  stage: sast
+  image: sonarsource/sonar-scanner-cli:latest
+  script:
+    - sonar-scanner
+  rules:
+    - if: $SONAR_TOKEN
+
+sca-trivy-fs:
+  stage: sca
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs --scanners vuln,license --severity HIGH,CRITICAL --exit-code 1 --format sarif --output trivy-fs.sarif app/
+  artifacts:
+    when: always
+    paths: [trivy-fs.sarif]
+
+container-scan:
+  stage: container
+  image: docker:27
+  services: [docker:27-dind]
+  script:
+    - docker build -t "$IMAGE" app/
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --exit-code 1 "$IMAGE"
+
+sbom-syft:
+  stage: sbom
+  image:
+    name: anchore/syft:latest
+    entrypoint: [""]
+  script:
+    - syft dir:app -o cyclonedx-json=sbom.json
+  artifacts:
+    paths: [sbom.json]
+
+dast-zap:
+  stage: dast
+  image: ghcr.io/zaproxy/zaproxy:stable
+  variables:
+    TARGET: "http://app:8080"
+  services:
+    - name: "$IMAGE"
+      alias: app
+  script:
+    - zap-baseline.py -t "$TARGET" -c ci/zap-rules.tsv -r zap-report.html || true
+  artifacts:
+    when: always
+    paths: [zap-report.html]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"

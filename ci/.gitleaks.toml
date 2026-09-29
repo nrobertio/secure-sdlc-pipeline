@@ -1,0 +1,11 @@
+# Gitleaks configuration: use the default ruleset and allowlist test fixtures.
+title = "secure-sdlc gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ignore test fixtures and sample docs"
+paths = [
+  '''app/tests/.*''',
+]

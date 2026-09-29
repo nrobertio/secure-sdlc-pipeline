@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.log
+reports/
+*.sarif
+sbom.json
+.DS_Store
+.idea/
+.vscode/

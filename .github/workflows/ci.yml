@@ -1,0 +1,31 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (secrets)
+        uses: gitleaks/gitleaks-action@v2
+      - name: Semgrep (SAST)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: auto
+      - name: Trivy (SCA + config)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: app
+          severity: HIGH,CRITICAL
+      - name: Python tests
+        run: |
+          pip install -r app/requirements.txt pytest httpx
+          pytest -q

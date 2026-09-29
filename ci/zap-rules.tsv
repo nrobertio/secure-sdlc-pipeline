@@ -1,0 +1,3 @@
+# OWASP ZAP baseline rule tuning: rule_id\tthreshold(IGNORE|WARN|FAIL)\tcomment
+10015\tIGNORE\tIncomplete or no cache-control header, noisy for an API
+10096\tIGNORE\tTimestamp disclosure, low value for this sample
