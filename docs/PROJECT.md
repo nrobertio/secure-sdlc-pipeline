@@ -1,6 +1,6 @@
 # Project Writeup: Secure SDLC Pipeline (DevSecOps)
 
-Why this exists, how it was built, why each tool, the benefits, and the interview talking-track. This project maps directly to product-security and application-security roles that ask for security tooling integrated into CI/CD.
+Why this exists, how it was built, why each tool, the benefits, and the design trade-offs. This project maps directly to product-security and application-security use cases that integrate security tooling into CI/CD.
 
 ## 1. The problem it solves
 
@@ -43,7 +43,7 @@ Every tool emits a machine-readable report (SARIF, JSON or CycloneDX). In a real
 - Portable: the same checks run in GitLab, Jenkins or GitHub, so the approach transfers between employers.
 - Auditable and reportable: SARIF and SBOM artifacts feed a dashboard for tracking and compliance.
 
-## 7. Interview talking points
+## 7. Design notes and trade-offs
 
 - SAST vs DAST vs SCA: SAST reads source for insecure patterns, DAST tests the running app from the outside, SCA checks third-party dependencies for known CVEs. You want all three because each finds what the others miss.
 - Why fail the build vs warn: a blocking gate changes behaviour; a warning is noise. Tune severity so gates are credible, not annoying.
